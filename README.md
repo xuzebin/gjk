@@ -34,3 +34,41 @@ cd build && ./gjk
 
 ## Environment
 - This project was developed and tested only on macOS.
+
+## GJK - 3D Collision Detection for Convex Objects
+- The original GJK algorithm is used to determine the minimum distance between two convex sets. In this implementation, only a simple boolean intersection query is returned. 
+- Two convex objects intersects iff the Minkowski Difference contains the origin. Basically, it is searching the origin by iteratively constructing a simplex inside the Minkowski Difference that attempts to enclose the origin.
+
+## Usage
+The algorithm was implemented in the file `gjk.h`.
+You can easily use it for 3D collision detection without dependency on GFrame (although I did include two header files (cvec3.h, matrix4.h) in GFrame).
+
+The usage is fairly simple:
+
+```c++
+// The 3d points of shape 1 and shape 2
+std::vector<Vec3> vertices1;
+std::vector<Vec3> vertices2;
+
+// Adding points
+//...
+
+// Create Shape objects
+Shape shape1(vertices1);
+Shape shape2(vertices2);
+
+// Create the GJK object
+GJK gjk;
+
+//game loop
+while (1) {
+	// Update if modelMatrix is dirty, 
+	// we need those 3d points in the world frame.
+	shape1.update(modelMatrix1);
+	shape2.update(modelMatrix2);
+	
+	//intersection query
+	bool intersected = gjk.intersect(shape1, shape2);
+	//...
+}
+```

@@ -1,13 +1,14 @@
 #include <vector>
 #include <iostream>
 #include "base/cvec.h"// vectors class
-#include "base/matrix4.h"// vectors class
+#include "base/matrix4.h"// matrix class
 #include <stdexcept>
+
 typedef Cvec3 Vec3;//3d point/vector
 typedef Cvec4 Vec4;//3d homogenous point, w=1
 
-#define DEBUG 0
 using namespace std;
+
 class Shape {
  private:
     std::vector<Vec3> vertices;
@@ -33,31 +34,21 @@ class Shape {
         Vec3 worldvert(p[0], p[1], p[2]);
         Vec3 best(worldvert);
         double farthest = dot(worldvert, v);
-#if DEBUG
-        cout << "p[" << worldvert << " ";
-#endif
+
         for (int i = 1; i < vertices.size(); i++) {
             p = modelMatrix * Vec4(vertices[i][0], vertices[i][1], vertices[i][2], 1);
             worldvert[0] = p[0]; worldvert[1] = p[1]; worldvert[2] = p[2];
-#if DEBUG
-            cout << "p[" << i << "]: " << worldvert << " ";
-#endif
             double d = dot(worldvert, v);
-#if DEBUG
-            cout << "comparing: best(" << best << "= " << farthest << " with d(" << worldvert << "=" << d << endl;
-#endif
+
             if (farthest < d) {
                 best = worldvert;
                 farthest = d;
             }
         }
 
-#if DEBUG
-        cout << endl;
-        std::cout << "best point:  " << best << ", diretion: " << v << std::endl;
-#endif
         return best;
     }
+
     //not used. just use an arbitary initial vector
     Vec3 getAveragePoint() const {
         Vec3 avg;
@@ -74,46 +65,25 @@ class Shape {
 class GJK {
  public:
     bool intersect(const Shape& shape1, const Shape& shape2) {
-        //        Vec3 avg1 = shape1.getAveragePoint();
-        //        Vec3 avg2 = shape2.getAveragePoint();
-        
         v = Vec3(1,0,0);//initial vector
-#if DEBUG
-        std::cout << "initial vector: " << v << std::endl;
-#endif
         n = 0;//set simplex size 0
 
         c = support(shape1, shape2, v);
 
-#if DEBUG
-        cout << "c: " << c << ", v: " << v << endl;
-        cout << "c dot v: " << dot(c,v) << endl;
-#endif
         if (dot(c, v) < 0) {
-            cout << "n==0 false" << endl;
             return false;
         }
         v = -c;
         b = support(shape1, shape2, v);
-#if DEBUG
-        cout << "b: " << b << ", v: " << v << endl;
-        cout << "b dot v: " << dot(b,v) << endl;
-#endif
 
         if (dot(b, v) < 0) {
-            cout << "n==1 false" << endl;
             return false;
         }
         v = tripleProduct(c - b, -b);
         n = 2;
         
         for (int i = 0; i < MAX_ITERATIONS; ++i) {
-            
             Vec3 a = support(shape1, shape2, v);
-#if DEBUG
-            std::cout << "iteration " << i << std::endl;
-            std::cout << "support " << a << std::endl;
-#endif
             if (dot(a, v) < 0) {
                 // no intersection
                 return false;
@@ -137,7 +107,6 @@ class GJK {
     bool update(const Vec3& a) {
         if (n == 2) {
             //handling triangle
-            std::cout << "n=2" << std::endl;
             Vec3 ao = -a;
             Vec3 ab = b - a;
             Vec3 ac = c - a;
@@ -188,7 +157,6 @@ class GJK {
         }
 
         if (n == 3) {
-            std::cout << "n=3" << std::endl;
             Vec3 ao = -a;
             Vec3 ab = b - a;
             Vec3 ac = c - a;
@@ -209,42 +177,14 @@ class GJK {
                 (dot(acd, ao) > 0 ? over_acd : 0) |
                 (dot(adb, ao) > 0 ? over_adb : 0);
 
-#if DEBUG
-            if (dot(abc, ao) > 0) {
-                std::cout << "over abc" << std::endl;
-            }
-            if (dot(acd, ao) > 0) {
-                std::cout << "over acd" << std::endl;
-            }
-            if (dot(adb, ao) > 0) {
-                std::cout << "over adb" << std::endl;
-            }
-
-            std::cout << "abc: " << abc << std::endl;
-            std::cout << "acd: " << acd << std::endl;
-            std::cout << "adb: " << adb << std::endl;
-
-
-            std::cout << "overabc: " << dot(abc, ao) << std::endl;
-            std::cout << "overacd: " << dot(acd, ao) << std::endl;
-            std::cout << "overadb: " << dot(adb, ao) << std::endl;
-
-#endif
-
             switch(plane_tests) {
             case 0:
                 {
-#if DEBUG
-                    std::cout << "case 0" << std::endl;
-#endif
                     //inside the tetrahedron
                     return true;
                 }
             case over_abc:
                 {
-#if DEBUG
-                    std::cout << "case overabc" << std::endl;                    
-#endif
                     if (!checkOneFaceAC(abc, ac, ao)) {
                         //in the region of AC
                         return false;
@@ -264,9 +204,6 @@ class GJK {
                 }
             case over_acd:
                 {
-#if DEBUG
-                    std::cout << "case overacd" << std::endl;
-#endif
                     //rotate acd to abc, and perform the same procedure
                     b = c;
                     c = d;
@@ -296,9 +233,6 @@ class GJK {
                 }
             case over_adb:
                 {
-#if DEBUG
-                    std::cout << "case overadb" << std::endl;
-#endif
                     //rotate adb to abc, and perform the same procedure
                     c = b;
                     b = d;
@@ -325,9 +259,6 @@ class GJK {
                     return false;
                 }
             case over_abc | over_acd:
-#if DEBUG
-                    std::cout << "case overabc|acd" << std::endl;
-#endif
                 {
                     if (!checkTwoFaces(abc, acd, ac, ab, ad, ao)) {
                         if (!checkOneFaceAC(abc, ac, ao)) {
@@ -359,9 +290,6 @@ class GJK {
                 }
             case over_acd | over_adb:
                 {
-#if DEBUG
-                    std::cout << "case overacd|adb" << std::endl;
-#endif
                     //rotate ACD, ADB into ABC, ACD
                     tmp = b;
                     b = c;
@@ -405,9 +333,6 @@ class GJK {
                 }
             case over_adb | over_abc:
                 {
-#if DEBUG
-                    std::cout << "case overadb|abc" << std::endl;
-#endif
                     //rotate ADB, ABC into ABC, ACD
                     tmp = c;
                     c = b;
@@ -451,13 +376,9 @@ class GJK {
                     }
                 }
             default:
-#if DEBUG
-                    std::cout << "case default" << std::endl;
-#endif
                 return true;
             }
         }
-        std::cout << "should not reach here n = " << n << std::endl;
         return true;
     }
 

@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 class Shader;
 
@@ -55,9 +55,6 @@ void resetCamera() {
 }
 
 void controls(GLFWwindow* window, int key, int scancode, int action, int mods) {
-#if DEBUG
-    std::cout<< ("%d\n",key) << std::endl;
-#endif
     if (key == GLFW_KEY_A) {
         lineWidth += 0.5f;
     } else if (key == GLFW_KEY_S) {
@@ -90,14 +87,12 @@ void controls(GLFWwindow* window, int key, int scancode, int action, int mods) {
     
     //switch controled object
     if (key == GLFW_KEY_0 && action == GLFW_PRESS) {
-        cout << "key 0 pressed" << endl;
         if (controledObj != nullptr) {
             controledObj = controledObj->getName() == "model0" ? Scene::getEntity("model2") : Scene::getEntity("model0");
         }
     }
 
     //model0 control
-    //    auto model0 = Scene::getEntity("model0");
     auto model0 = controledObj;
     if (model0 == nullptr) {
         std::cerr << "control object null!" << std::endl;
@@ -163,8 +158,10 @@ void curson_pos(GLFWwindow* window, double xpos, double ypos) {
         if (model != NULL) {
             Quat rotation = trackball.getRotation(xpos, ypos);
             model->setRotation(rotation);
+#if DEBUG
             std::cout << "position: " << model->getPosition() << std::endl;
             std::cout << "rotation: " << model->getRotation() << std::endl;
+#endif
         }
     }
 }
@@ -184,7 +181,6 @@ void extractVertices(const std::vector<Vertex>& vs, std::vector<Cvec3>& outvs) {
 }
 
 void display(GLFWwindow* window) {
-    //    Scene::render();
     while (!glfwWindowShouldClose(window)) {
         glLineWidth(lineWidth);
         // Scale to window size
@@ -202,19 +198,6 @@ void display(GLFWwindow* window) {
 
         auto model0 = Scene::getEntity("model0");//rotate second object
         auto model2 = Scene::getEntity("model2");//rotate second object
-#if DEBUG
-        cout << "model0 pos: " << model0->getPosition() << endl;
-        cout << "model2 pos: " << model2->getPosition() << endl;
-#endif
-        //        model2->rotate(Quat::makeYRotation(2));
-
-        //        const Matrix4& mm1 = cvh1->getParent()->transform.getRigidBodyMatrix() * cvh1->getModelMatrix();
-        //        const Matrix4& mm2 = cvh2->getParent()->transform.getRigidBodyMatrix() * cvh2->getModelMatrix();
-
-
-        //        cout << "pp1 own" << endl << cvh1->getParent()->transform.getRigidBodyMatrix() << endl;
-        //        cout << "pp1 own" << endl << Scene::getEntity("model0")->transform.getRigidBodyMatrix() << endl;
-        //        cout << "pp2 own" << endl << Scene::getEntity("model2")->transform.getRigidBodyMatrix() << endl;
 
         //Update modelmatrix if it's dirty
         if (cvh1->getParent()->transform.matrixDirty()) {
@@ -227,14 +210,12 @@ void display(GLFWwindow* window) {
             mm2 = cvh2->getParent()->getModelMatrix();
             shape2.update(mm2);
         }
-#if DEBUG
-        cout << "mm1 own" << endl << cvh1->getModelMatrix() << endl;
-        cout << "mm2 own" << endl << cvh2->getModelMatrix() << endl;
-#endif
+
         //collision detection
         bool collide = gjk.intersect(shape1, shape2);
-
+#if DEBUG
         std::cout << "collide? " << collide << std::endl;
+#endif
 
         std::vector<std::string> names;
         names.push_back("model0");
@@ -242,9 +223,7 @@ void display(GLFWwindow* window) {
         for (int i = 0; i < 2; ++i) {
             std::string name = names[i];
             auto model = Scene::getEntity(name);
-#if DEBUG
-            std::cout << "rendering " << model->getName() << std::endl;
-#endif
+
             if (solid) {
                 model->material->setColor(1,1,0);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -355,7 +334,7 @@ GLFWwindow* initWindow(const int resX, const int resY) {
 
     glClearColor(0.3f, 0.3f, 0.5f, 1.0f);
     glClearDepth(0.0);
-    //    glCullFace(GL_BACK);
+    glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_GREATER);
